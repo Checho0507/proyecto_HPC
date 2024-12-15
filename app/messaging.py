@@ -1,7 +1,7 @@
 import pika
 import smtplib
 from email.mime.text import MIMEText
-from sender import password
+from app.sender import password
 
 # Función para enviar un correo con la llave de seguridad
 def send_email(email, security_key):
