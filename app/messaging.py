@@ -1,11 +1,12 @@
 import pika
 import smtplib
 from email.mime.text import MIMEText
+from sender import password
 
 # Función para enviar un correo con la llave de seguridad
 def send_email(email, security_key):
     sender_email = "genetica.vinos@gmail.com"
-    sender_password = ""  # Sustituye con la contraseña generada
+    sender_password = password  # Sustituye con la contraseña generada
     subject = "Llave de Seguridad - Portal de Vinos"
     body = f"Hola,\n\nTu llave de seguridad es: {security_key}\n\nGracias por registrarte."
 
