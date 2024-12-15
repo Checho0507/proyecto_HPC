@@ -51,10 +51,34 @@ def copy_large_vcf_file(file_path):
             # Copiar archivo usando shutil (más eficiente para archivos grandes)
             shutil.copy2(file_path, destination_path)
             st.success(f"✅ Archivo '{os.path.basename(file_path)}' copiado con éxito a {destination_path}")
+            return destination_path  # Retornar la ruta del archivo copiado
         except Exception as e:
             st.error(f"Error al copiar {file_path}: {e}")
+            return None
     else:
         st.warning("El archivo seleccionado no es un archivo VCF")
+        return None
 
-
-    
+def parse_vcf(file_path):
+    extracted_data = []
+    with open(file_path, 'r') as file:
+        for line in file:
+            if line.startswith('#'):
+                continue  # Ignorar encabezados
+            fields = line.strip().split('\t')
+            chrom, pos, var_id, ref, alt, qual, filter_, info = fields[:8]
+            format_ = fields[8] if len(fields) > 8 else None
+            outputs = ','.join(fields[9:]) if len(fields) > 9 else None
+            extracted_data.append({
+                'chrom': chrom,
+                'pos': int(pos),
+                'id': var_id,
+                'ref': ref,
+                'alt': alt,
+                'qual': qual,
+                'filter': filter_,
+                'info': info,
+                'format': format_,
+                'outputs': outputs
+            })
+    return extracted_data

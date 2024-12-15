@@ -3,16 +3,17 @@ import threading
 import time
 
 from fastapi import requests
-from backend.files_manager import copy_large_vcf_file, select_vcf_file
+from backend.files_manager import copy_large_vcf_file, parse_vcf, select_vcf_file
 import streamlit as st  # type: ignore
 import pandas as pd # type: ignore
 import os
-from backend.db import add_user, validate_user
+from backend.db import add_user, init_db, save_vcf_data_to_db, search_files_in_db, validate_user
 from backend.security import init_sessions, register_user, sign_in
 from concurrent.futures import ThreadPoolExecutor
 #from backend .file_manager import upload_file, search_files  # Funciones para manejo de archivos
 import streamlit as st
 import os
+
 def user_dashboard():
     st.set_page_config(page_title="Portal de Archivos de Investigadores", page_icon="📂")
     
@@ -44,9 +45,12 @@ def user_dashboard():
                 with st.expander("Archivo Seleccionado"): 
                     st.write(f"📄 {os.path.basename(st.session_state['selected_file'])}")
                 time.sleep(1)
-                        
+    
                 with st.spinner("Subiendo archivo..."):
-                    copy_large_vcf_file(selected_file)
+                    file_path = copy_large_vcf_file(selected_file)
+                    file = parse_vcf(file_path)
+                    save_vcf_data_to_db(os.path.basename(file_path), file)
+                    
                 st.success("📦 Archivo cargado con éxito")
                 time.sleep(1)
                 # Resetear estados
@@ -57,35 +61,43 @@ def user_dashboard():
         st.info("💡 Selecciona el archivo VCF que deseas subir. 5 GB Máximo")
 
     elif menu == "Buscar Archivos":
-        st.title("Buscar Archivos VCF 🔍")
+        buscar_en_archivos()
+
+def buscar_en_archivos():
+    st.title("Buscar Archivos VCF 🔍")
+
+    # Entrada para filtros de búsqueda
+    query = st.text_input(f"Ingresa un valor a buscar:")
+
+    # Configuración de paginación
+    page_size = st.selectbox("Resultados por página:", [10, 25, 50, 100], index=0)
+    page = st.number_input("Número de página:", min_value=1, value=1, step=1)
+
+    # Realizar búsqueda al presionar el botón
+    if st.button("🔎 Buscar"):
+        with st.spinner("Buscando..."):
+            try:
+                results, total_results = search_files_in_db(query, page, page_size)
+                
+                if results:
+                    # Mostrar los resultados en un DataFrame
+                    df = pd.DataFrame(results, columns=["Chrom", "Pos", "Id", "Ref", "Alt", "Qual", "Filter", "Info", "Format", "Outputs"])
+                    st.write(f"Mostrando página {page} de {((total_results // page_size) + 1)} (Total de resultados: {total_results})")
+                    st.table(df)
+
+                    # Botones para navegación de páginas
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        if st.button("⬅️ Página Anterior") and page > 1:
+                            st.experimental_rerun()  # Recarga la interfaz para mostrar la página anterior
+                    with col3:
+                        if st.button("➡️ Página Siguiente") and page * page_size < total_results:
+                            st.experimental_rerun()  # Recarga la interfaz para mostrar la siguiente página
+                else:
+                    st.warning("🚫 No se encontraron resultados.")
+            except Exception as e:
+                st.error(f"❌ Error al realizar la búsqueda: {e}")
         
-        
-        # Formulario de búsqueda con tarjeta de diseño
-        st.markdown("### Parámetros de Búsqueda")
-        
-        format_filter = st.text_input("Filtro de Búsqueda:")
-        
-        # Opciones de resultados
-        results_per_page = st.selectbox("Resultados por página:", [10, 25, 50, 100], index=1)
-        
-        # Botón de búsqueda
-        if st.button("🔎 Buscar"):
-            with st.spinner("Buscando..."):
-                try:
-                    search_params = {
-                        "Format": format_filter,
-                    }
-                    results = perform_parallel_search(search_params)
-                    
-                    if results.empty:
-                        st.warning("🚫 No se encontraron resultados.")
-                    else:
-                        display_results(results, results_per_page)
-                except Exception as e:
-                    st.error(f"❌ Error al buscar archivos: {e}")
-        
-        # Información de ayuda
-        st.info("💡 Ingresa los parámetros de búsqueda.")
         
 def perform_parallel_search(search_params):
     """Estrategia de paralelización para realizar búsquedas en los archivos."""
@@ -130,6 +142,7 @@ def init(e):
     st.write("Por favor, elige una opción para continuar.")
     
     init_sessions()
+    init_db()
 
     # Formulario de registro
     email = st.text_input("Correo Electrónico:")
