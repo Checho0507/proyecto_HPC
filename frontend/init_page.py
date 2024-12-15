@@ -63,16 +63,7 @@ def user_dashboard():
         # Formulario de búsqueda con tarjeta de diseño
         st.markdown("### Parámetros de Búsqueda")
         
-        # Columnas para filtros
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            chrom_filter = st.text_input("Cromosoma (Chrom):")
-            filter_filter = st.text_input("Filtro:")
-        
-        with col2:
-            info_filter = st.text_input("Información (Info):")
-            format_filter = st.text_input("Formato:")
+        format_filter = st.text_input("Filtro de Búsqueda:")
         
         # Opciones de resultados
         results_per_page = st.selectbox("Resultados por página:", [10, 25, 50, 100], index=1)
@@ -82,9 +73,6 @@ def user_dashboard():
             with st.spinner("Buscando..."):
                 try:
                     search_params = {
-                        "Chrom": chrom_filter,
-                        "Filter": filter_filter,
-                        "Info": info_filter,
                         "Format": format_filter,
                     }
                     results = perform_parallel_search(search_params)
@@ -97,7 +85,8 @@ def user_dashboard():
                     st.error(f"❌ Error al buscar archivos: {e}")
         
         # Información de ayuda
-        st.info("💡 Ingresa los parámetros de búsqueda. Puedes dejar campos en blanco para búsquedas más amplias.")
+        st.info("💡 Ingresa los parámetros de búsqueda.")
+        
 def perform_parallel_search(search_params):
     """Estrategia de paralelización para realizar búsquedas en los archivos."""
     files = os.listdir("data")  # Directorio donde se almacenan los archivos
