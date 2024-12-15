@@ -1,0 +1,11 @@
+streamlit
+fastapi
+uvicorn
+pymongo
+pika
+pandas
+dask
+pyarrow
+vobject
+python-multipart
+PyQt5
