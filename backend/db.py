@@ -111,8 +111,8 @@ def search_files_in_db(query, page, page_size, file_query):
     cursor.execute(f'''
         SELECT COUNT(*)
         FROM files
-        WHERE chrom LIKE ? OR filter LIKE ? OR info LIKE ? OR format LIKE ?
-    ''', (query, query, query, query))
+        WHERE file_name LIKE ? AND user_email LIKE ? AND (chrom LIKE ? OR filter LIKE ? OR info LIKE ? OR format LIKE ?)
+    ''', (f"%{file_query}%", f"%{st.session_state['email']}%", query, query, query, query))
     total_results = cursor.fetchone()[0]
 
     # Aplicar filtro con paginación
@@ -120,11 +120,12 @@ def search_files_in_db(query, page, page_size, file_query):
     cursor.execute(f'''
         SELECT chrom, pos, id, ref, alt, qual, filter, info, format, outputs
         FROM files
-        WHERE file_name LIKE ? AND user_email LIKE ? AND chrom LIKE ? OR filter LIKE ? OR info LIKE ? OR format LIKE ?
+        WHERE file_name LIKE ? AND user_email LIKE ? AND (chrom LIKE ? OR filter LIKE ? OR info LIKE ? OR format LIKE ?)
         LIMIT ? OFFSET ?
-    ''', (file_query, st.session_state["email"], query, query, query, query, page_size, offset))
+    ''', (f"%{file_query}%", f"%{st.session_state['email']}%", query, query, query, query, page_size, offset))
 
     results = cursor.fetchall()
     conn.close()
     return results, total_results
+
 

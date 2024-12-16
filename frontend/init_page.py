@@ -49,7 +49,7 @@ def user_dashboard():
                 with st.spinner("Subiendo archivo..."):
                     file_path = copy_large_vcf_file(selected_file)
                     file = parse_vcf(file_path)
-                    save_vcf_data_to_db(os.path.basename(file_path), file)
+                    save_vcf_data_to_db(os.path.basename(st.session_state['selected_file']), file)
                     
                 st.success("📦 Archivo cargado con éxito")
                 time.sleep(1)
