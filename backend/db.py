@@ -21,6 +21,7 @@ def init_db():
     cursor2.execute('''
         CREATE TABLE IF NOT EXISTS files (
             table_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_email TEXT,
             file_name TEXT NOT NULL,
             upload_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             chrom TEXT,
@@ -80,9 +81,10 @@ def save_vcf_data_to_db(file_name, extracted_data):
     cursor = conn.cursor()
     for data in extracted_data:
         cursor.execute('''
-            INSERT INTO files (file_name, chrom, pos, id, ref, alt, qual, filter, info, format, outputs)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO files (user_email, file_name, chrom, pos, id, ref, alt, qual, filter, info, format, outputs)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
+            st.session_state["email"],
             file_name,
             data['chrom'], data['pos'], data['id'], data['ref'], data['alt'],
             data['qual'], data['filter'], data['info'], data['format'], data['outputs']
@@ -118,9 +120,9 @@ def search_files_in_db(query, page, page_size):
     cursor.execute(f'''
         SELECT chrom, pos, id, ref, alt, qual, filter, info, format, outputs
         FROM files
-        WHERE chrom LIKE ? OR filter LIKE ? OR info LIKE ? OR format LIKE ?
+        WHERE user_email LIKE ? AND chrom LIKE ? OR filter LIKE ? OR info LIKE ? OR format LIKE ?
         LIMIT ? OFFSET ?
-    ''', (query, query, query, query, page_size, offset))
+    ''', (st.session_state["email"],query, query, query, query, page_size, offset))
 
     results = cursor.fetchall()
     conn.close()

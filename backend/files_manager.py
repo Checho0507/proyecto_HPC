@@ -21,23 +21,6 @@ def select_vcf_file():
 
     return file_path
 
-def select_vcf_files():
-    # Crear una instancia de QApplication si no existe
-    app = QApplication.instance()
-    if app is None:
-        app = QApplication(sys.argv)
-    
-    # Abrir diálogo de selección de archivos
-    file_dialog = QFileDialog()
-    file_paths, _ = file_dialog.getOpenFileNames(
-        None, 
-        "Seleccionar archivos VCF", 
-        "", 
-        "VCF Files (*.vcf)"
-    )
-    
-    return file_paths
-
 def copy_large_vcf_file(file_path):
     # Crear carpeta 'files' en el directorio raíz
     files_folder = os.path.join(os.path.dirname(__file__), 'files')
