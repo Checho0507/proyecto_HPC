@@ -90,10 +90,10 @@ def buscar_en_archivos():
                     col1, col2, col3 = st.columns(3)
                     with col1:
                         if st.button("⬅️ Página Anterior") and page > 1:
-                            st.experimental_rerun()  # Recarga la interfaz para mostrar la página anterior
+                            st.rerun()  # Recarga la interfaz para mostrar la página anterior
                     with col3:
                         if st.button("➡️ Página Siguiente") and page * page_size < total_results:
-                            st.experimental_rerun()  # Recarga la interfaz para mostrar la siguiente página
+                            st.rerun()  # Recarga la interfaz para mostrar la siguiente página
                 else:
                     st.warning("🚫 No se encontraron resultados.")
             except Exception as e:
