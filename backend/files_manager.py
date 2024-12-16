@@ -50,7 +50,6 @@ def copy_large_vcf_file(file_path):
         try:
             # Copiar archivo usando shutil (más eficiente para archivos grandes)
             shutil.copy2(file_path, destination_path)
-            st.success(f"✅ Archivo '{os.path.basename(file_path)}' copiado con éxito a {destination_path}")
             return destination_path  # Retornar la ruta del archivo copiado
         except Exception as e:
             st.error(f"Error al copiar {file_path}: {e}")
