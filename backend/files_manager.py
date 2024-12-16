@@ -64,3 +64,4 @@ def parse_vcf(file_path):
                 'outputs': outputs
             })
     return extracted_data
+

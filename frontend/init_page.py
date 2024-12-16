@@ -68,6 +68,7 @@ def buscar_en_archivos():
 
     # Entrada para filtros de búsqueda
     query = st.text_input(f"Ingresa un valor a buscar:")
+    file_name_query = st.text_input("Busca por nombre de archivo (parcial o completo):")
 
     # Configuración de paginación
     page_size = st.selectbox("Resultados por página:", [10, 25, 50, 100], index=0)
@@ -77,7 +78,7 @@ def buscar_en_archivos():
     if st.button("🔎 Buscar"):
         with st.spinner("Buscando..."):
             try:
-                results, total_results = search_files_in_db(query, page, page_size)
+                results, total_results = search_files_in_db(query, page, page_size, file_name_query)
                 
                 if results:
                     # Mostrar los resultados en un DataFrame

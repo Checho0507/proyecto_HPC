@@ -92,7 +92,7 @@ def save_vcf_data_to_db(file_name, extracted_data):
     conn.commit()
     conn.close()
 
-def search_files_in_db(query, page, page_size):
+def search_files_in_db(query, page, page_size, file_query):
     """
     Realiza una consulta a la base de datos para obtener resultados filtrados en columnas específicas.
     Args:
@@ -120,10 +120,11 @@ def search_files_in_db(query, page, page_size):
     cursor.execute(f'''
         SELECT chrom, pos, id, ref, alt, qual, filter, info, format, outputs
         FROM files
-        WHERE user_email LIKE ? AND chrom LIKE ? OR filter LIKE ? OR info LIKE ? OR format LIKE ?
+        WHERE file_name LIKE ? AND user_email LIKE ? AND chrom LIKE ? OR filter LIKE ? OR info LIKE ? OR format LIKE ?
         LIMIT ? OFFSET ?
-    ''', (st.session_state["email"],query, query, query, query, page_size, offset))
+    ''', (file_query, st.session_state["email"], query, query, query, query, page_size, offset))
 
     results = cursor.fetchall()
     conn.close()
     return results, total_results
+
