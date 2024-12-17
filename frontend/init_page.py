@@ -72,28 +72,45 @@ def buscar_en_archivos():
 
     # Configuración de paginación
     page_size = st.selectbox("Resultados por página:", [10, 25, 50, 100], index=0)
-    page = st.number_input("Número de página:", min_value=1, value=1, step=1)
+    
+    if "pagina" not in st.session_state:
+        st.session_state["pagina"] = 1
+        
+    if "execute" not in st.session_state:
+        st.session_state["execute"] = False
 
     # Realizar búsqueda al presionar el botón
     if st.button("🔎 Buscar"):
+        st.session_state["execute"] = True
+        
+    data = st.empty()
+    # Botones para navegación de páginas
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        anterior = st.empty()
+    with col3:
+        siguiente = st.empty()
+    if st.session_state["execute"] == True:
+        buscar(query, page_size, file_name_query, data, anterior, siguiente)
+        
+def buscar(query, page_size, file_name_query, data, anterior, siguiente):
         with st.spinner("Buscando..."):
             try:
-                results, total_results = search_files_in_db(query, page, page_size, file_name_query)
+                results, total_results= search_files_in_db(query, st.session_state["pagina"], page_size, file_name_query)
                 
                 if results:
                     # Mostrar los resultados en un DataFrame
                     df = pd.DataFrame(results, columns=["Chrom", "Pos", "Id", "Ref", "Alt", "Qual", "Filter", "Info", "Format", "Outputs"])
-                    st.write(f"Mostrando página {page} de {((total_results // page_size) + 1)} (Total de resultados: {total_results})")
-                    st.table(df)
+                    st.write(f"Mostrando página {st.session_state["pagina"]} de {((total_results // page_size) + 1)} (Total de resultados: {total_results})")
+                    data.table(df)
 
                     # Botones para navegación de páginas
-                    col1, col2, col3 = st.columns(3)
-                    with col1:
-                        if st.button("⬅️ Página Anterior") and page > 1:
-                            st.rerun()  # Recarga la interfaz para mostrar la página anterior
-                    with col3:
-                        if st.button("➡️ Página Siguiente") and page * page_size < total_results:
-                            st.rerun()  # Recarga la interfaz para mostrar la siguiente página
+                    if anterior.button("⬅️ Página Anterior") and st.session_state["pagina"] > 1:
+                        st.session_state["pagina"] -= 1
+                        st.rerun()
+                    if siguiente.button("➡️ Página Siguiente") and st.session_state["pagina"] * page_size < total_results:
+                        st.session_state["pagina"] += 1
+                        st.rerun()
                 else:
                     st.warning("🚫 No se encontraron resultados.")
             except Exception as e:
