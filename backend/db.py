@@ -1,5 +1,62 @@
 import sqlite3
 import streamlit as st
+import sqlite3
+from concurrent.futures import ThreadPoolExecutor
+import streamlit as st
+
+def execute_query(query, params):
+    conn = sqlite3.connect('files.db')
+    cursor = conn.cursor()
+    cursor.execute(query, params)
+    results = cursor.fetchall()
+    conn.close()
+    return results
+
+def count_results(count_query, file_query_params):
+    conn = sqlite3.connect('files.db')
+    cursor = conn.cursor()
+    cursor.execute(count_query, file_query_params)
+    total_results = cursor.fetchone()[0]
+    conn.close()
+    return total_results
+
+def search_files_in_db(query, page, page_size, file_query):
+    """
+    Realiza una consulta a la base de datos para obtener resultados filtrados en columnas específicas.
+    Args:
+        query (str): El valor a buscar en las columnas específicas (Chrom, Filter, Info, Format).
+        page (int): Número de página para la paginación.
+        page_size (int): Número de resultados por página.
+    Returns:
+        results (list): Lista de resultados filtrados.
+        total_results (int): Total de resultados encontrados (sin paginación).
+    """
+    search_query = f"%{query}%"  # Patrón de búsqueda parcial
+
+    count_query = '''
+        SELECT COUNT(*)
+        FROM files
+        WHERE file_name LIKE ? AND user_email LIKE ? AND (chrom LIKE ? OR filter LIKE ? OR info LIKE ? OR format LIKE ?)
+    '''
+    
+    select_query = '''
+        SELECT chrom, pos, id, ref, alt, qual, filter, info, format, outputs
+        FROM files
+        WHERE file_name LIKE ? AND user_email LIKE ? AND (chrom LIKE ? OR filter LIKE ? OR info LIKE ? OR format LIKE ?)
+        LIMIT ? OFFSET ?
+    '''
+    
+    offset = (page - 1) * page_size
+    file_query_params = (f"%{file_query}%", f"%{st.session_state['email']}%", search_query, search_query, search_query, search_query)
+
+    with ThreadPoolExecutor(8) as executor:
+        future_count = executor.submit(count_results, count_query, file_query_params)
+        future_results = executor.submit(execute_query, select_query, (*file_query_params, page_size, offset))
+
+        total_results = future_count.result()
+        results = future_results.result()
+
+    return results, total_results
 
 # Configuración de la base de datos
 def init_db():
@@ -92,40 +149,6 @@ def save_vcf_data_to_db(file_name, extracted_data):
     conn.commit()
     conn.close()
 
-def search_files_in_db(query, page, page_size, file_query):
-    """
-    Realiza una consulta a la base de datos para obtener resultados filtrados en columnas específicas.
-    Args:
-        query (str): El valor a buscar en las columnas específicas (Chrom, Filter, Info, Format).
-        page (int): Número de página para la paginación.
-        page_size (int): Número de resultados por página.
-    Returns:
-        results (list): Lista de resultados filtrados.
-        total_results (int): Total de resultados encontrados (sin paginación).
-    """
-    conn = sqlite3.connect('files.db')
-    cursor = conn.cursor()
-    query = f"%{query}%"  # Patrón de búsqueda parcial
 
-    # Contar el total de resultados sin paginación
-    cursor.execute(f'''
-        SELECT COUNT(*)
-        FROM files
-        WHERE file_name LIKE ? AND user_email LIKE ? AND (chrom LIKE ? OR filter LIKE ? OR info LIKE ? OR format LIKE ?)
-    ''', (f"%{file_query}%", f"%{st.session_state['email']}%", query, query, query, query))
-    total_results = cursor.fetchone()[0]
-
-    # Aplicar filtro con paginación
-    offset = (page - 1) * page_size
-    cursor.execute(f'''
-        SELECT chrom, pos, id, ref, alt, qual, filter, info, format, outputs
-        FROM files
-        WHERE file_name LIKE ? AND user_email LIKE ? AND (chrom LIKE ? OR filter LIKE ? OR info LIKE ? OR format LIKE ?)
-        LIMIT ? OFFSET ?
-    ''', (f"%{file_query}%", f"%{st.session_state['email']}%", query, query, query, query, page_size, offset))
-
-    results = cursor.fetchall()
-    conn.close()
-    return results, total_results
 
 
