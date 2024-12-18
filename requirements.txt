@@ -8,4 +8,4 @@ dask
 pyarrow
 vobject
 python-multipart
-PyQt5
+streamlit PyQt5
